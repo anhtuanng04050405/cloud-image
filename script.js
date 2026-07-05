@@ -1,3 +1,57 @@
+// ==== Xác thực mật khẩu (chỉ chặn ở giao diện, không phải bảo mật thật) ====
+const AUTH_STORAGE_KEY = "folderApp_authOk";
+
+const authOverlay = document.getElementById("authOverlay");
+const authForm = document.getElementById("authForm");
+const authPasswordInput = document.getElementById("authPassword");
+const authError = document.getElementById("authError");
+const appContent = document.getElementById("appContent");
+const logoutBtn = document.getElementById("logoutBtn");
+
+function isAuthenticated() {
+  return localStorage.getItem(AUTH_STORAGE_KEY) === "true";
+}
+
+function unlockApp() {
+  authOverlay.style.display = "none";
+  appContent.style.display = "block";
+  initApp();
+}
+
+function showAuthScreen() {
+  authOverlay.style.display = "flex";
+  appContent.style.display = "none";
+  authPasswordInput.value = "";
+  authError.textContent = "";
+  setTimeout(() => authPasswordInput.focus(), 50);
+}
+
+authForm.addEventListener("submit", (e) => {
+  e.preventDefault();
+  const entered = authPasswordInput.value;
+  if (typeof APP_PASSWORD !== "undefined" && entered === APP_PASSWORD) {
+    localStorage.setItem(AUTH_STORAGE_KEY, "true");
+    unlockApp();
+  } else {
+    authError.textContent = "Sai mật khẩu, vui lòng thử lại.";
+    authPasswordInput.value = "";
+    authPasswordInput.focus();
+  }
+});
+
+logoutBtn.addEventListener("click", () => {
+  localStorage.removeItem(AUTH_STORAGE_KEY);
+  showAuthScreen();
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+  if (isAuthenticated()) {
+    unlockApp();
+  } else {
+    showAuthScreen();
+  }
+});
+
 // ==== Khởi tạo Supabase client ====
 let supabaseClient = null;
 const configOk = typeof SUPABASE_URL !== "undefined"
@@ -7,15 +61,9 @@ const configOk = typeof SUPABASE_URL !== "undefined"
   && SUPABASE_ANON_KEY
   && !SUPABASE_ANON_KEY.includes("YOUR-ANON");
 
-if (configOk) {
-  supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-} else {
-  document.addEventListener("DOMContentLoaded", () => {
-    document.getElementById("configWarning").style.display = "block";
-  });
-}
+const RETENTION_MS = (typeof RETENTION_DAYS !== "undefined" ? RETENTION_DAYS : 2) * 24 * 60 * 60 * 1000;
 
-// ==== DOM ====
+// ==== DOM (nội dung chính) ====
 const folderInput = document.getElementById("folderInput");
 const dropZone = document.getElementById("dropZone");
 const folderNameDisplay = document.getElementById("folderNameDisplay");
@@ -25,6 +73,7 @@ const progressBar = document.getElementById("progressBar");
 const progressText = document.getElementById("progressText");
 const folderListEl = document.getElementById("folderList");
 const refreshBtn = document.getElementById("refreshBtn");
+const retentionDaysLabel = document.getElementById("retentionDaysLabel");
 
 const galleryModal = document.getElementById("galleryModal");
 const galleryTitle = document.getElementById("galleryTitle");
@@ -38,6 +87,26 @@ const lightboxClose = document.getElementById("lightboxClose");
 
 let pendingFiles = [];
 let currentFolderPathInModal = null;
+let appInitialized = false;
+
+function initApp() {
+  if (appInitialized) {
+    renderFolderList();
+    return;
+  }
+  appInitialized = true;
+
+  if (retentionDaysLabel && typeof RETENTION_DAYS !== "undefined") {
+    retentionDaysLabel.textContent = RETENTION_DAYS;
+  }
+
+  if (configOk) {
+    supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    renderFolderList();
+  } else {
+    document.getElementById("configWarning").style.display = "block";
+  }
+}
 
 // ==== Chọn folder ====
 folderInput.addEventListener("change", (e) => {
@@ -141,7 +210,8 @@ saveBtn.addEventListener("click", async () => {
   progressWrap.style.display = "block";
 
   const rawName = folderNameDisplay.dataset.folderName || "folder";
-  // Mỗi lần lưu tạo 1 folder riêng biệt trên storage (tránh đè lẫn nhau)
+  // Mỗi lần lưu tạo 1 folder riêng biệt trên storage, có gắn timestamp
+  // để tính hạn tự động xoá sau này (tránh đè lẫn nhau giữa các lần tải lên)
   const folderPath = `${sanitizeName(rawName)}__${Date.now()}`;
 
   let done = 0;
@@ -178,6 +248,45 @@ saveBtn.addEventListener("click", async () => {
   renderFolderList();
 });
 
+// ==== Tự động xoá folder cũ hơn RETENTION_DAYS ====
+async function cleanupExpiredFolders(folders) {
+  const now = Date.now();
+  const kept = [];
+
+  for (const folder of folders) {
+    const match = folder.name.match(/__(\d+)$/);
+    const ts = match ? parseInt(match[1], 10) : null;
+
+    if (ts && (now - ts) > RETENTION_MS) {
+      try {
+        const { data: files } = await supabaseClient.storage.from(BUCKET_NAME).list(folder.name, { limit: 1000 });
+        const paths = (files || []).map(f => `${folder.name}/${f.name}`);
+        if (paths.length) {
+          await supabaseClient.storage.from(BUCKET_NAME).remove(paths);
+        }
+        console.log("Đã tự động xoá folder hết hạn:", folder.name);
+      } catch (err) {
+        console.error("Lỗi khi tự xoá folder", folder.name, err);
+        kept.push(folder); // giữ lại nếu xoá lỗi, thử lại lần sau
+      }
+    } else {
+      kept.push(folder);
+    }
+  }
+
+  return { kept, ts: now };
+}
+
+function getExpiryInfo(folderName) {
+  const match = folderName.match(/__(\d+)$/);
+  if (!match) return null;
+  const ts = parseInt(match[1], 10);
+  const expiresAt = ts + RETENTION_MS;
+  const msLeft = expiresAt - Date.now();
+  const daysLeft = Math.max(0, Math.ceil(msLeft / (24 * 60 * 60 * 1000)));
+  return { daysLeft, msLeft };
+}
+
 // ==== Hiển thị danh sách folder đã lưu ====
 async function renderFolderList() {
   if (!supabaseClient) return;
@@ -194,7 +303,11 @@ async function renderFolderList() {
     return;
   }
 
-  const folders = (rootEntries || []).filter(e => e.id === null);
+  let folders = (rootEntries || []).filter(e => e.id === null);
+
+  // Dọn dẹp folder hết hạn trước khi hiển thị
+  const cleanupResult = await cleanupExpiredFolders(folders);
+  folders = cleanupResult.kept;
 
   if (folders.length === 0) {
     folderListEl.innerHTML = `<div class="empty-state">Chưa có folder nào được lưu. Hãy tải lên một folder ảnh ở trên.</div>`;
@@ -209,13 +322,17 @@ async function renderFolderList() {
 
     const displayName = folder.name.replace(/__\d+$/, "");
     const thumbUrl = imageFiles.length ? getPublicUrl(`${folder.name}/${imageFiles[0].name}`) : "";
+    const expiry = getExpiryInfo(folder.name);
 
     const card = document.createElement("div");
     card.className = "folder-card";
     card.innerHTML = `
       ${thumbUrl ? `<img class="thumb" src="${thumbUrl}" loading="lazy">` : `<div class="thumb"></div>`}
       <div class="fname">${escapeHtml(displayName)}</div>
-      <div class="fmeta">${imageFiles.length} ảnh</div>
+      <div class="fmeta">
+        <span>${imageFiles.length} ảnh</span>
+        ${expiry ? `<span class="expiry-badge ${expiry.daysLeft <= 1 ? 'soon' : ''}">Còn ${expiry.daysLeft} ngày</span>` : ""}
+      </div>
     `;
     card.addEventListener("click", () => openGallery(folder.name, displayName));
     folderListEl.appendChild(card);
@@ -276,8 +393,3 @@ lightbox.addEventListener("click", (e) => {
 });
 
 refreshBtn.addEventListener("click", renderFolderList);
-
-// ==== Khởi động ====
-document.addEventListener("DOMContentLoaded", () => {
-  if (supabaseClient) renderFolderList();
-});

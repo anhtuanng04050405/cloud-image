@@ -1,7 +1,7 @@
 # Lưu trữ Folder Ảnh (Supabase Storage)
 
 Web app tĩnh (HTML/CSS/JS thuần) cho phép tải lên một folder ảnh, lưu trên **Supabase Storage**
-để xem được từ nhiều máy/thiết bị khác nhau.
+để xem được từ nhiều máy/thiết bị khác nhau. Có màn hình mật khẩu và tự động xoá folder cũ.
 
 ## Bước 1: Tạo project Supabase (miễn phí)
 
@@ -18,52 +18,71 @@ Web app tĩnh (HTML/CSS/JS thuần) cho phép tải lên một folder ảnh, lư
 
 ## Bước 3: Cho phép upload/xóa từ trình duyệt (Storage Policies)
 
-Vì trang không có server riêng, cần cho phép "anon key" (khoá công khai) upload/xóa trực tiếp.
+Vào menu trái → **SQL Editor** → **New query** → dán cả 3 câu sau vào cùng lúc → bấm **Run**:
 
-1. Vào **Storage** → bấm vào bucket `photos` → tab **Policies**.
-2. Bấm **New policy** → chọn **For full customization** (hoặc "Create a policy from scratch").
-3. Tạo lần lượt 3 policy sau (mỗi cái áp dụng cho bucket `photos`):
-
-**Policy đọc (SELECT):**
 ```sql
 create policy "Public read photos"
 on storage.objects for select
 using ( bucket_id = 'photos' );
-```
 
-**Policy tải lên (INSERT):**
-```sql
 create policy "Public upload photos"
 on storage.objects for insert
 with check ( bucket_id = 'photos' );
-```
 
-**Policy xóa (DELETE):**
-```sql
 create policy "Public delete photos"
 on storage.objects for delete
 using ( bucket_id = 'photos' );
 ```
 
-> Cách nhanh hơn: vào **SQL Editor** (menu trái) → **New query** → dán cả 3 đoạn SQL trên cùng lúc → **Run**.
+Sau đó vào **Storage** → bucket `photos` → tab **Policies** để xác nhận có 3 policy.
 
-⚠️ **Lưu ý bảo mật**: cấu hình này cho phép **bất kỳ ai có link trang web** đều upload/xóa được ảnh
-(không cần đăng nhập). Phù hợp cho nhu cầu cá nhân/nội bộ đơn giản. Nếu cần bảo mật hơn (chỉ mình bạn
-upload/xóa được), cho mình biết để thêm phần đăng nhập (Supabase Auth).
+⚠️ Cấu hình này cho phép **bất kỳ ai có link trang** upload/xóa được ảnh trực tiếp qua API Supabase
+(không qua giao diện web). Màn hình mật khẩu ở Bước 5 chỉ chặn được người vào bằng giao diện web,
+không chặn được người gọi trực tiếp API. Nếu cần chặn triệt để, cần chuyển sang Supabase Auth.
 
 ## Bước 4: Lấy API key và điền vào code
 
-1. Vào **Project Settings** (icon bánh răng) → **API**.
-2. Copy **Project URL** và **anon public key**.
-3. Mở file `config.js`, dán vào:
+1. Vào **Project Settings** (icon bánh răng) → **API Keys** → tab **Legacy anon, service_role API keys**.
+2. Copy khoá dòng **anon / public** (chuỗi dài bắt đầu `eyJhbGciOi...`).
+3. Vào **Project Settings** → **General** → copy **Project ID**, ví dụ `abcxyz123`.
+4. Project URL sẽ là: `https://<Project ID>.supabase.co`
+5. Mở file `config.js`, điền:
 
 ```js
-const SUPABASE_URL = "https://xxxxxxxx.supabase.co";
+const SUPABASE_URL = "https://abcxyz123.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOi...";
 const BUCKET_NAME = "photos";
+const APP_PASSWORD = "Anhtuanng04050405__";
+const RETENTION_DAYS = 2;
 ```
 
-## Bước 5: Đẩy code lên GitHub
+- `APP_PASSWORD`: mật khẩu để vào trang (đổi thành mật khẩu khác nếu muốn).
+- `RETENTION_DAYS`: số ngày giữ ảnh trước khi tự xoá (mặc định 2).
+
+## Bước 5: Cách hoạt động của mật khẩu
+
+- Khi mở trang, người dùng phải nhập đúng `APP_PASSWORD` mới vào được.
+- Sau khi nhập đúng 1 lần, trình duyệt đó sẽ nhớ (dùng `localStorage`) và không hỏi lại,
+  cho đến khi bấm nút **Đăng xuất** hoặc xoá dữ liệu trình duyệt.
+- **Lưu ý quan trọng**: đây chỉ là lớp chặn giao diện, không phải bảo mật thật sự — vì đây là code
+  JavaScript chạy hoàn toàn trên trình duyệt, ai mở "View Page Source" hoặc DevTools đều xem được
+  mật khẩu này trong `config.js`. Phù hợp để ngăn người lạ tình cờ vào nhầm link, không phù hợp nếu
+  cần bảo vệ dữ liệu nhạy cảm thật sự. Nếu cần bảo mật chắc chắn hơn, nên chuyển sang Supabase Auth
+  (đăng nhập thật, có kiểm tra ở phía server) — báo lại nếu bạn muốn nâng cấp phần này.
+
+## Bước 6: Cách hoạt động của tự động xoá folder cũ
+
+- Mỗi folder khi lưu sẽ được gắn kèm thời điểm tạo (timestamp) trong tên.
+- Mỗi khi có ai mở trang (load danh sách folder), hệ thống sẽ kiểm tra và **tự xoá** những folder
+  đã quá `RETENTION_DAYS` ngày kể từ lúc tải lên.
+- Cơ chế này chạy ở phía trình duyệt (client-side), nghĩa là chỉ xoá khi có người mở trang —
+  không có ai truy cập thì folder cũ vẫn còn nằm đó cho tới khi có người mở trang lần kế tiếp.
+- Nếu cần xoá đúng giờ dù không có ai truy cập (ví dụ chạy nền mỗi ngày), cần thiết lập thêm
+  **Supabase Edge Function + Cron job** ở phía server — đây là phần nâng cao, báo lại nếu bạn cần
+  mình hướng dẫn thêm.
+- Mỗi thẻ folder trong danh sách sẽ hiện nhãn "Còn X ngày" để biết thời gian trước khi bị xoá.
+
+## Bước 7: Đẩy code lên GitHub
 
 ```bash
 git init
@@ -74,7 +93,7 @@ git remote add origin https://github.com/<ten-user>/<ten-repo>.git
 git push -u origin main
 ```
 
-## Bước 6: Deploy (chọn 1 trong 2 cách)
+## Bước 8: Deploy (chọn 1 trong 2 cách)
 
 ### Cách A — GitHub Pages (đơn giản nhất, miễn phí)
 
@@ -90,13 +109,8 @@ git push -u origin main
 3. Vì là static site, không cần build command gì cả → bấm **Deploy**.
 4. Xong, có ngay 1 URL dùng được, và mỗi lần bạn push code mới lên GitHub sẽ tự deploy lại.
 
-## Kiểm tra hoạt động
-
-Mở trang đã deploy, nếu thấy dòng cảnh báo đỏ "Bạn chưa điền thông tin Supabase" nghĩa là
-`config.js` chưa đúng — kiểm tra lại URL/key. Nếu không thấy cảnh báo, thử tải 1 folder ảnh lên,
-sau đó mở trang bằng máy/điện thoại khác để kiểm tra ảnh đã hiện ra chưa.
-
 ## Giới hạn cần biết
 
 - Gói Supabase miễn phí: 1GB storage, 2GB băng thông/tháng — đủ dùng cho ảnh nhẹ với lượng truy cập vừa phải.
-- Bucket đang để public + cho phép anon insert/delete, nên ai có link web đều thao tác được — đừng chia sẻ link công khai nếu không muốn người lạ upload/xóa ảnh.
+- Mật khẩu chỉ chặn ở giao diện, không chặn được người gọi trực tiếp API Supabase.
+- Tự động xoá folder cũ chỉ chạy khi có người mở trang (client-side), không chạy nền 24/7.

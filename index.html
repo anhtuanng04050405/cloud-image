@@ -7,11 +7,31 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="container">
+
+  <!-- ==== Màn hình xác thực mật khẩu ==== -->
+  <div id="authOverlay" class="auth-overlay">
+    <form id="authForm" class="auth-box">
+      <div class="auth-icon">🔒</div>
+      <h2>Nhập mật khẩu để tiếp tục</h2>
+      <p class="auth-sub">Trang này được bảo vệ bằng mật khẩu.</p>
+      <input type="password" id="authPassword" placeholder="Mật khẩu" autocomplete="current-password" autofocus>
+      <button type="submit" class="btn primary">Mở khoá</button>
+      <div id="authError" class="auth-error"></div>
+    </form>
+  </div>
+
+  <!-- ==== Nội dung chính ==== -->
+  <div class="container" id="appContent" style="display:none;">
     <header>
-      <h1>📁 Lưu trữ Folder Ảnh</h1>
-      <p class="subtitle">Tải lên một folder ảnh — dữ liệu lưu trên Supabase Storage, truy cập được từ mọi máy/thiết bị.</p>
+      <div class="header-row">
+        <div>
+          <h1>📁 Lưu trữ Folder Ảnh</h1>
+          <p class="subtitle">Tải lên một folder ảnh — dữ liệu lưu trên Supabase Storage, truy cập được từ mọi máy/thiết bị. Folder sẽ tự động bị xoá sau <span id="retentionDaysLabel">2</span> ngày.</p>
+        </div>
+        <button id="logoutBtn" class="btn small">Đăng xuất</button>
+      </div>
     </header>
+
     <div id="configWarning" class="config-warning" style="display:none;">
       ⚠️ Bạn chưa điền thông tin Supabase trong file <code>config.js</code>. Xem hướng dẫn trong README.md.
     </div>

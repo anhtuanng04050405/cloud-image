@@ -1,14 +1,15 @@
 :root {
-  --bg: #0f1115;
-  --panel: #171a21;
-  --panel-2: #1f232c;
-  --border: #2a2f3a;
-  --text: #e7e9ee;
-  --muted: #9aa2b1;
-  --accent: #6c8cff;
-  --accent-2: #8f6cff;
-  --danger: #ff6c6c;
+  --bg: #f5f6f9;
+  --panel: #ffffff;
+  --panel-2: #f0f2f6;
+  --border: #e3e6ec;
+  --text: #1c2029;
+  --muted: #6b7280;
+  --accent: #4f6df5;
+  --accent-2: #8355f0;
+  --danger: #e5484d;
   --radius: 14px;
+  --shadow: 0 2px 10px rgba(20, 24, 36, 0.06);
 }
 
 * { box-sizing: border-box; }
@@ -16,7 +17,7 @@
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  background: radial-gradient(1200px 600px at 20% -10%, #1c2030 0%, var(--bg) 60%);
+  background: var(--bg);
   color: var(--text);
   min-height: 100vh;
 }
@@ -27,6 +28,13 @@ body {
   padding: 32px 20px 80px;
 }
 
+.header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
 header h1 {
   margin: 0 0 6px;
   font-size: 28px;
@@ -34,22 +42,23 @@ header h1 {
 
 .subtitle {
   color: var(--muted);
-  margin: 0 0 28px;
+  margin: 0;
   font-size: 14px;
+  max-width: 640px;
 }
 
 .config-warning {
-  background: rgba(255,108,108,0.1);
+  background: #fff1f1;
   border: 1px solid var(--danger);
-  color: #ffb0b0;
+  color: #b23a3f;
   border-radius: 10px;
   padding: 12px 16px;
-  margin-bottom: 20px;
+  margin: 20px 0;
   font-size: 14px;
 }
 
 .config-warning code {
-  background: rgba(0,0,0,0.3);
+  background: rgba(0,0,0,0.06);
   padding: 2px 6px;
   border-radius: 4px;
 }
@@ -59,7 +68,8 @@ header h1 {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 24px;
-  margin-bottom: 36px;
+  margin: 24px 0 36px;
+  box-shadow: var(--shadow);
 }
 
 .upload-label {
@@ -75,11 +85,12 @@ header h1 {
   transition: border-color .15s ease, background .15s ease;
   text-align: center;
   color: var(--muted);
+  background: var(--panel-2);
 }
 
 .upload-label:hover, .upload-label.drag {
   border-color: var(--accent);
-  background: rgba(108,140,255,0.06);
+  background: rgba(79,109,245,0.06);
 }
 
 .upload-icon { font-size: 28px; }
@@ -95,18 +106,17 @@ header h1 {
 }
 
 .btn {
-  border: none;
   border-radius: 10px;
   padding: 10px 18px;
   font-size: 14px;
   cursor: pointer;
   color: var(--text);
-  background: var(--panel-2);
+  background: var(--panel);
   border: 1px solid var(--border);
-  transition: transform .1s ease, background .15s ease;
+  transition: transform .1s ease, background .15s ease, box-shadow .15s ease;
 }
 
-.btn:hover:not(:disabled) { transform: translateY(-1px); }
+.btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: var(--shadow); }
 .btn:disabled { opacity: .5; cursor: not-allowed; }
 
 .btn.primary {
@@ -116,10 +126,11 @@ header h1 {
   margin: 16px auto 0;
   padding: 12px 28px;
   font-weight: 600;
+  color: #fff;
 }
 
 .btn.small { padding: 6px 12px; font-size: 13px; }
-.btn.danger { background: rgba(255,108,108,0.12); border-color: var(--danger); color: var(--danger); }
+.btn.danger { background: #fff1f1; border-color: var(--danger); color: var(--danger); }
 
 .progress-wrap {
   margin-top: 16px;
@@ -168,7 +179,8 @@ header h1 {
   border-radius: var(--radius);
   padding: 16px;
   cursor: pointer;
-  transition: transform .12s ease, border-color .12s ease;
+  transition: transform .12s ease, border-color .12s ease, box-shadow .12s ease;
+  box-shadow: var(--shadow);
 }
 
 .folder-card:hover { transform: translateY(-2px); border-color: var(--accent); }
@@ -183,7 +195,9 @@ header h1 {
 }
 
 .folder-card .fname { font-weight: 600; font-size: 14px; margin-bottom: 4px; word-break: break-word; }
-.folder-card .fmeta { font-size: 12px; color: var(--muted); }
+.folder-card .fmeta { font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; gap: 6px; }
+.folder-card .expiry-badge { font-size: 11px; padding: 2px 8px; border-radius: 20px; background: #fff4e0; color: #a15c00; white-space: nowrap; }
+.folder-card .expiry-badge.soon { background: #fff1f1; color: var(--danger); }
 
 .empty-state {
   color: var(--muted);
@@ -192,13 +206,14 @@ header h1 {
   text-align: center;
   border: 1px dashed var(--border);
   border-radius: var(--radius);
+  background: var(--panel);
 }
 
 .modal {
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.6);
+  background: rgba(20, 24, 36, 0.5);
   z-index: 50;
   padding: 30px 16px;
   overflow-y: auto;
@@ -213,6 +228,7 @@ header h1 {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 20px;
+  box-shadow: 0 10px 40px rgba(20,24,36,0.15);
 }
 
 .modal-header {
@@ -244,7 +260,7 @@ header h1 {
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.9);
+  background: rgba(10, 12, 18, 0.92);
   z-index: 100;
   align-items: center;
   justify-content: center;
@@ -265,4 +281,61 @@ header h1 {
   font-size: 28px;
   color: #fff;
   cursor: pointer;
+}
+
+/* ==== Màn hình xác thực ==== */
+.auth-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 20px;
+}
+
+.auth-box {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 36px 32px;
+  max-width: 360px;
+  width: 100%;
+  text-align: center;
+}
+
+.auth-icon { font-size: 34px; margin-bottom: 8px; }
+
+.auth-box h2 { font-size: 18px; margin: 0 0 6px; }
+
+.auth-sub { color: var(--muted); font-size: 13px; margin: 0 0 20px; }
+
+.auth-box input {
+  width: 100%;
+  padding: 11px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  color: var(--text);
+  font-size: 14px;
+  margin-bottom: 14px;
+}
+
+.auth-box input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.auth-box .btn.primary {
+  width: 100%;
+  margin: 0;
+}
+
+.auth-error {
+  color: var(--danger);
+  font-size: 13px;
+  margin-top: 12px;
+  min-height: 16px;
 }
