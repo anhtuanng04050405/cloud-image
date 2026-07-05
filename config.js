@@ -1,0 +1,3 @@
+const SUPABASE_URL = "https://yzgdnrvexfkuaxyjnjgt.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl6Z2RucnZleGZrdWF4eWpuamd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMxOTg2MzMsImV4cCI6MjA5ODc3NDYzM30.kczZAelK_2odpIPCBW6vTpH0kBjQtUdCsRpfAb2Xbik";
+const BUCKET_NAME = "photos";

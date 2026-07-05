@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lưu trữ Folder Ảnh</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>📁 Lưu trữ Folder Ảnh</h1>
+      <p class="subtitle">Tải lên một folder ảnh — dữ liệu lưu trên Supabase Storage, truy cập được từ mọi máy/thiết bị.</p>
+    </header>
+    <div id="configWarning" class="config-warning" style="display:none;">
+      ⚠️ Bạn chưa điền thông tin Supabase trong file <code>config.js</code>. Xem hướng dẫn trong README.md.
+    </div>
+
+    <section class="upload-box">
+      <label for="folderInput" class="upload-label" id="dropZone">
+        <span class="upload-icon">⬆️</span>
+        <span>Kéo thả hoặc bấm để chọn folder ảnh</span>
+        <input type="file" id="folderInput" webkitdirectory directory multiple accept="image/*">
+      </label>
+      <div class="folder-name" id="folderNameDisplay"></div>
+      <button id="saveBtn" class="btn primary" disabled>Lưu folder này</button>
+      <div class="progress-wrap" id="progressWrap" style="display:none;">
+        <div class="progress-bar" id="progressBar"></div>
+        <span id="progressText"></span>
+      </div>
+    </section>
+
+    <section class="library">
+      <div class="library-header">
+        <h2>Các folder đã lưu</h2>
+        <button id="refreshBtn" class="btn small">🔄 Làm mới</button>
+      </div>
+      <div id="folderList" class="folder-list"></div>
+    </section>
+
+    <div id="galleryModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="galleryTitle"></h3>
+          <div>
+            <button id="deleteFolderBtn" class="btn danger small">🗑 Xóa folder</button>
+            <button id="closeModal" class="btn small">✕ Đóng</button>
+          </div>
+        </div>
+        <div id="galleryGrid" class="gallery-grid"></div>
+      </div>
+    </div>
+
+    <div id="lightbox" class="lightbox">
+      <span id="lightboxClose" class="lightbox-close">✕</span>
+      <img id="lightboxImg" src="" alt="">
+    </div>
+  </div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
