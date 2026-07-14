@@ -9,7 +9,7 @@ const BUCKET_NAME = "photos";
 
 // Mật khẩu để vào trang (chỉ là lớp chặn giao diện, không phải bảo mật thật sự -
 // vì đây là code chạy trên trình duyệt, ai xem mã nguồn cũng thấy được mật khẩu này)
-const APP_PASSWORD = "Anhtuanng04050405__";
+const APP_PASSWORD = "Aa123456__";
 
 // Số ngày giữ ảnh trước khi tự động xoá (mặc định 2 ngày)
 const RETENTION_DAYS = 2;
